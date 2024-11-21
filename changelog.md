@@ -204,6 +204,6 @@ The game springs to life with our wonderful new additions of SFX!
 
 OK I'm done using figurative language.
 
-Basically we added a bunch of SFX for walking, jumping, zombie deaths, player taking damage, zombie taking damage, bullet whooshing, etc Also, we added lore recordings! You can find them scattered throughout the first level.
+Basically we added a bunch of SFX for walking, jumping, zombie deaths, player taking damage, zombie taking damage, picking up weapon, bullet whooshing, etc Also, we added lore recordings! You can find them scattered throughout the first level.
 
-A bunch of other little goodies: (tried to) fix audio delayed playing issue, made textures load better so you see the blue "unloaded" texture less, fixed gun muzzle flash not showing, made items not collide with the player, populated the second level with items.
+A bunch of other little goodies: (tried to) fix audio delayed playing issue, made textures load better so you see the blue "unloaded" texture less, fixed gun muzzle flash not showing, made items not collide with the player, populated the second level with items, made cartridges move with the player.
