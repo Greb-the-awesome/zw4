@@ -68,9 +68,15 @@ class AnimationRenderer {
 }
 
 // custom map loader
-function loadMapFromObj(url, mtlUrl, callback) {
-	var res = {"position":[], "normal":[], "color": [], "texCoord": [], "hitboxes": [], "zombies": [], "tps": [], "items": []};
+function loadMapFromObj(url, mtlUrl, callback, levelName) {
+    // by the way, levelName is used to see which texture to load
+	var res = {"position":[], "normal":[], "color": [], "texCoord": [], "hitboxes": [], "zombies": [], "tps": [], "items": [], "recorders": [], "tex": null};
 	var rnd = Math.random();
+
+    // start loading the texture
+    // NOTE: since I am lazy, the texture may not have been loaded by the time `callback` is called.
+    res.tex = loadTexture("./static/zw4/gltf/" + levelName + ".png?rand_num="+Math.random());
+
 	// rnd = 1;
 	request(url+"?rand="+rnd, function(txt) { // jimmy rigged but it works
 		var data = parseOBJ(txt);
@@ -93,7 +99,8 @@ function loadMapFromObj(url, mtlUrl, callback) {
                 toPush[0] = [avg(mins[0], maxs[0]), avg(mins[1], maxs[1]), avg(mins[2], maxs[2])];
                 toPush[1] = [maxs[0] - mins[0], maxs[1] - mins[1], maxs[2] - mins[2]];
                 toPush[1][0]/=2; toPush[1][1]/=2; toPush[1][2]/=2;
-                if (geom.material == "hbmat") {
+                if (geom.material.startsWith("hbmat_")) {
+                    toPush.material = geom.material.replace("hbmat_", "");
                     res.hitboxes.push(toPush);
                 } else if (geom.material.startsWith("zombiemat_")) {
                     // this is a zombie
@@ -124,6 +131,8 @@ function loadMapFromObj(url, mtlUrl, callback) {
                             break;
                         }
                     }
+                } else if (geom.material.startsWith("recorder_")) {
+                    res.recorders.push([toPush, geom.material]);
                 }
                 else {
                     res.position = res.position.concat(geom.data.position);
@@ -187,30 +196,62 @@ var hbNames = {
     //
 };
 
+var audios = [
+    "ambience1.mp3",
+    "angry_Awajiba_1.mp3",
+    "angry_Awajiba_2.mp3",
+    "angry_Awajiba_3.mp3",
+    "angry_Awajiba_4.mp3",
+    "bullet.mp3",
+    "death_Awajiba.mp3",
+    "fire_AK-47.mp3",
+    "fire_AN-94.mp3",
+    "fire_MAC M10.mp3",
+    "fire_Mosin-Nagant.mp3",
+    "fire_MP40.mp3",
+    "fire_PK.mp3",
+    "footstep_concrete_1.mp3",
+    "footstep_concrete_2.mp3",
+    "footstep_concrete_3.mp3",
+    "footstep_wire_1.mp3",
+    "footstep_wire_2.mp3",
+    "footstep_wire_3.mp3",
+    "footstep_wood_1.mp3",
+    "footstep_wood_3.mp3",
+    "hurt_Awajiba.mp3",
+    "hurt_player.mp3",
+    "jump_landing.mp3",
+    "jump_launch.mp3",
+    "pickup.mp3",
+    "recorder_1.mp3",
+    "recorder_3.mp3",
+    "reload_AK-47.mp3",
+    "reload_AN-94.mp3",
+    "reload_MAC M10.mp3",
+    "reload_Mosin-Nagant.mp3",
+    "reload_MP40.mp3",
+    "reload_PK.mp3",
+];
+
 var levelNames = {
     level1: "buildingobj/level1",
     level2: "buildingobj/level2",
     level3: "buildingobj/credits",
 };
 
-var audios = {
-	"pop": "./static/worldgentest/gltf/sfx/pop.mp3",
-	"tree": "./static/worldgentest/gltf/sfx/tree.mp3",
-	"tree2": "./static/worldgentest/gltf/sfx/tree2.mp3",
-	"rock1": "./static/worldgentest/gltf/sfx/rockbullet1.mp3",
-	"rock2": "./static/worldgentest/gltf/sfx/rockbullet2.mp3",
-	"rock3": "./static/worldgentest/gltf/sfx/rockbullet3.mp3",
-};
-
-// buffer all the audio
-for (var prop in audios) {
-    new Audio(audios[prop]);
-}
-
 function checker() {}
 var loadStart = Date.now();
 loadAnimation("./static/zw4/gltf/zombie poses/walk2", "./static/zw4/gltf/zombie poses/walk2", "walk2", 30,
     (res)=>{checker(); animators["zomb_Awajiba"] = new AnimationRenderer(res, "objShader");});
+
+// preload the audio
+for (var path of audios) {
+    var audio = document.createElement("audio");
+    audio.style.display = "none";
+    audio.preload = "auto";
+    audio.src = "./static/zw4/sfx/" + path;
+    document.body.insertBefore(audio, document.getElementById("preloadBase"));
+}
 
 for (var prop in objNames) {
     let pr = prop;
@@ -230,7 +271,7 @@ for (var prop in levelNames) {
     let pr = prop;
     function cb(res) {models[pr] = res;}
     loadMapFromObj("./static/zw4/gltf/"+levelNames[prop]+".obj", "./static/zw4/gltf/"+levelNames[prop]+".mtl",
-        cb);
+        cb, prop);
 }
 
 for (var prop in oTex) {

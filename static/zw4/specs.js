@@ -8,7 +8,7 @@ var gunSpecs = {
         bulletColor: [1, 1, 0.7, 1],
         damage: 10,
         bulletLength: 2,
-        barrelLength: 1,
+        barrelLength: 0.8,
         roundsPerReload: 30,
         spread: 3,
         zombieBurstRounds: [3, 7], // range for how many rounds zombies fire in a burst
@@ -18,9 +18,10 @@ var gunSpecs = {
             recoilDecayFactor: 0.75,
             recoilSideDevation: 0.02,
             linearRecoil: 0.1,
-            muzzleRiseRotation: 0.2,
+            muzzleRiseRotation: 0.1,
             recoilSideRotation: 0.1
-        }
+        },
+        
     },
     "MAC M10": {
         delay: 50,
@@ -61,11 +62,11 @@ var gunSpecs = {
         cartridge: "cartridge_762",
         ejectionDistance: 0.5,
         recoil: {
-            recoilDecayFactor: 0.75,
-            recoilSideDevation: 0.02,
-            linearRecoil: 0.1,
-            muzzleRiseRotation: 0.2,
-            recoilSideRotation: 0.1
+            recoilDecayFactor: 0.8,
+            recoilSideDevation: 0.01,
+            linearRecoil: 0.03,
+            muzzleRiseRotation: 0.1,
+            recoilSideRotation: 0.05
         }
     },
     "Mosin-Nagant": {
@@ -84,10 +85,10 @@ var gunSpecs = {
         cartridge: "cartridge_762",
         ejectionDistance: 0.5,
         recoil: {
-            recoilDecayFactor: 0.9,
-            recoilSideDevation: 0.01,
-            linearRecoil: 0.1,
-            muzzleRiseRotation: 0.2,
+            recoilDecayFactor: 0.97,
+            recoilSideDevation: 0.005,
+            linearRecoil: 0.02,
+            muzzleRiseRotation: 0.1,
             recoilSideRotation: 0.01
         }
     },
@@ -107,11 +108,11 @@ var gunSpecs = {
         cartridge: "cartridge_762",
         ejectionDistance: 0.5,
         recoil: {
-            recoilDecayFactor: 0.75,
-            recoilSideDevation: 0.02,
-            linearRecoil: 0.1,
-            muzzleRiseRotation: 0.2,
-            recoilSideRotation: 0.1
+            recoilDecayFactor: 0.8,
+            recoilSideDevation: 0.01,
+            linearRecoil: 0.03,
+            muzzleRiseRotation: 0.1,
+            recoilSideRotation: 0.05
         }
     },
     "AN-94": {
@@ -128,16 +129,16 @@ var gunSpecs = {
         spread: 1,
         zombieBurstRounds: [2, 6],
         cartridge: "cartridge_762",
-        ejectionDistance: 0.5,
+        ejectionDistance: 0.35,
         burstFire: true,
         roundsPerBurst: 2,
         burstDelay: 25,
         recoil: {
-            recoilDecayFactor: 0.75,
-            recoilSideDevation: 0.02,
-            linearRecoil: 0.1,
-            muzzleRiseRotation: 0.2,
-            recoilSideRotation: 0.1
+            recoilDecayFactor: 0.8,
+            recoilSideDevation: 0.01,
+            linearRecoil: 0.03,
+            muzzleRiseRotation: 0.1,
+            recoilSideRotation: 0.05
         }
     },
 }

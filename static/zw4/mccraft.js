@@ -138,6 +138,7 @@ function ded(reason) {
 		IHP.regenerateKinematics();
 		clearAllBuffers();
 	}, 100);
+	document.exitPointerLock();
 }
 
 function restartButton() {
@@ -183,6 +184,16 @@ function renderProgressCircle(msg, remaining, total) {
 	oCtx.fillText(msg, oW * 0.5, oH * 0.635);
 }
 
+function renderInteractionPrompt(text) {
+	// used to render prompts like "F - MAC M10"
+	oCtx.fillStyle = "black";
+	oCtx.fillRect(oW * 0.4, oH * 0.03, oW * 0.2, oH * 0.07);
+	oCtx.textAlign = "center";
+	oCtx.fillStyle = "white";
+	oCtx.font = (oH * 0.06) + "px Impact";
+	oCtx.fillText(text, oW * 0.5, oH * 0.08);
+}
+
 function gameLoop(_t) {
 
 	if (paused) {
@@ -206,30 +217,36 @@ function gameLoop(_t) {
 	lightingInfo = [...levelSpecs[currentLevel.levelNum].lighting.lightDirection, ...levelSpecs[currentLevel.levelNum].lighting.color, ...levelSpecs[currentLevel.levelNum].lighting.ambient];
 
 	// movement
-	var actualSpeed = player.speed;
 	if (divisDownKeys["ShiftLeft"]) {
-		actualSpeed = player.sprintSpeed;
+		player.actualSpeed = player.sprintSpeed;
+	} else {
+		player.actualSpeed = player.speed;
 	}
 	var scaledFront = glMatrix.vec3.create();
 	scaledFront[0] = player.cameraFront[0]; scaledFront[2] = player.cameraFront[2];
 	glMatrix.vec3.normalize(scaledFront, scaledFront);
-	glMatrix.vec3.scale(scaledFront, scaledFront, actualSpeed * dt/1000);
+	glMatrix.vec3.scale(scaledFront, scaledFront, player.actualSpeed * dt/1000);
 	var right = glMatrix.vec3.create();
 	glMatrix.vec3.cross(right, scaledFront, player.cameraUp);
 	glMatrix.vec3.normalize(right, right);
-	glMatrix.vec3.scale(right, right, actualSpeed * dt/1000);
+	glMatrix.vec3.scale(right, right, player.actualSpeed * dt/1000);
 
+	player.userInputVelocity = glMatrix.vec3.create();
 	if (divisDownKeys["KeyW"]) {
 		glMatrix.vec3.add(player.pos, player.pos, scaledFront);
+		glMatrix.vec3.add(player.userInputVelocity, player.userInputVelocity, scaledFront);
 	}
 	if (divisDownKeys["KeyS"]) {
 		glMatrix.vec3.subtract(player.pos, player.pos, scaledFront);
+		glMatrix.vec3.subtract(player.userInputVelocity, player.userInputVelocity, scaledFront);
 	}
 	if (divisDownKeys["KeyA"]) {
 		glMatrix.vec3.subtract(player.pos, player.pos, right);
+		glMatrix.vec3.subtract(player.userInputVelocity, player.userInputVelocity, right);
 	}
 	if (divisDownKeys["KeyD"]) {
 		glMatrix.vec3.add(player.pos, player.pos, right);
+		glMatrix.vec3.add(player.userInputVelocity, player.userInputVelocity, right);
 	}
 	if (divisDownKeys["KeyR"] && player.selected.constructor.name == "Gun") {
 		player.selected.attemptReload();
@@ -239,6 +256,9 @@ function gameLoop(_t) {
 	if (divisDownKeys["Digit3"]) {player.invIndex = 2;}
 	if (divisDownKeys["Digit4"]) {player.invIndex = 3;}
 
+	// scale up the userInputVelocity since the velocity is the movement per frame but IHP runs in movement per second
+	glMatrix.vec3.scale(player.userInputVelocity, player.userInputVelocity, 1000/dt);
+
 	IHP.simulationCenter = player.pos;
 
 	debugDispNow["[p] movement headers "] = performance.now() - _finishedLastTask;
@@ -246,6 +266,7 @@ function gameLoop(_t) {
 	
 
 	// updates
+	player.materialStandingOn = false; // set it to false, then physicsUpdate may set it to a material if it detects that player is colliding with the ground
 	IHP.physicsUpdate(dt, 16.666);
 	GUIeffects.update(dt);
 	debugDispNow["[p] physics "] = performance.now() - _finishedLastTask;
@@ -266,7 +287,7 @@ function gameLoop(_t) {
 	debugDispNow["rmb"] = rmb;
 	if (player.selected.type == "gun") {
 		player.selected.update(dt, true, player.pos);
-		if (mouseDown && player.selected.canShoot()) {
+		if (mouseDown && player.selected.canShoot(player.pos)) {
 			player.selected.recoil();
 			var scaledFront = glMatrix.vec3.create();
 			var distanceFromPlayer = player.selected.specs.barrelLength;
@@ -281,7 +302,11 @@ function gameLoop(_t) {
 			var cartridgeScaledFront = glMatrix.vec3.create(), cartridgePos = glMatrix.vec3.create();
 			glMatrix.vec3.scale(cartridgeScaledFront, player.cameraFront, player.selected.specs.ejectionDistance);
 			glMatrix.vec3.add(cartridgePos, player.cameraPos, cartridgeScaledFront);
-			Gun.ejectCartridge(cartridgePos, player.selected.specs.cartridge, glMatrix.glMatrix.toRadian(-player.yaw));
+			var ejected = Gun.ejectCartridge(cartridgePos, player.selected.specs.cartridge, glMatrix.glMatrix.toRadian(-player.yaw));
+
+			// add player's velocity to the cartridge so it moves with the player somewhat
+			glMatrix.vec3.add(ejected.vel, ejected.vel, player.userInputVelocity);
+			glMatrix.vec3.add(ejected.vel, ejected.vel, player.vel);
 		}
 	}
 

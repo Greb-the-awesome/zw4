@@ -29,7 +29,7 @@ class SFXhandler {
         // returns [0, 1] depending on distance
         return Math.max(0, Math.pow(0.9, dist));
     }
-    static newSound(url, _pos, volume, category, ambient = false, loop = false) {
+    static newSound(url, _pos, volume, category, ambient = false, loop = false, customDropOff = false) {
         // ambient = it is played at full volume regardless of where you are at
         if (!this.categoryVolume[category]) {
             category = "default";
@@ -37,10 +37,11 @@ class SFXhandler {
         var pos = [_pos[0], _pos[1], _pos[2]]; // copy it
         let toPush = {
             url: url, pos: pos, volume: volume, category: category, ambient: ambient, loop: loop,
+            dropOff: (customDropOff?customDropOff:this.distanceDropoff),
             obj: new Audio(url)
         };
         toPush.obj.loop = loop;
-        toPush.obj.volume = volume * this.categoryVolume[category] * SFXhandler.internalMasterVolume * SFXhandler.userMasterVolume * this.distanceDropoff(glMatrix.vec3.dist(pos, this.earPos));
+        toPush.obj.volume = volume * this.categoryVolume[category] * SFXhandler.internalMasterVolume * SFXhandler.userMasterVolume * toPush.dropOff(glMatrix.vec3.dist(pos, this.earPos));
         if (ambient) {toPush.obj.volume = volume * this.categoryVolume[category];}
         toPush.obj.play();
         if (!loop) toPush.obj.addEventListener("ended", function() {toPush.removed = true;});
@@ -50,8 +51,8 @@ class SFXhandler {
     static update() {
         this.nowPlaying = this.nowPlaying.filter(p=>!p.removed);
         for (var s of this.nowPlaying) {
-            s.obj.volume = s.volume * SFXhandler.internalMasterVolume * SFXhandler.userMasterVolume * this.categoryVolume[s.category] * this.distanceDropoff(glMatrix.vec3.dist(s.pos, this.earPos));
-            if (s.ambient) {s.obj.volume = s.volume * this.categoryVolume[s.category];}
+            if (s.ambient) {s.obj.volume = s.volume * this.categoryVolume[s.category] * SFXhandler.internalMasterVolume * SFXhandler.userMasterVolume;}
+            else {s.obj.volume = s.volume * SFXhandler.internalMasterVolume * SFXhandler.userMasterVolume * this.categoryVolume[s.category] * s.dropOff(glMatrix.vec3.dist(s.pos, this.earPos));}
         }
     }
     static stopAll() {
@@ -193,8 +194,11 @@ class Gun {
         this.currentRecoilRotation = glMatrix.vec3.create();
         this.pos = [0,0,0];
         this.reloadSFX = null; // the SFX handler audio thingy for the reload
+
+        this.time = 0; // used for the "breathing" animations
     }
     update(dt, focused, pos) {
+        this.time += dt * player.actualSpeed / player.speed; // since the time variable is only used for the breathing animation, which needs to change speed based on how fast the player is running, we scale the dt
         this.pos = pos;
         if (focused) {
             // if the player is selecting this gun, then we can reload
@@ -231,9 +235,10 @@ class Gun {
         this.currentRecoilTranslation = glMatrix.vec3.fromValues(this.specs.recoil.recoilSideDevation * (Math.random() - 0.5), 0, this.specs.recoil.linearRecoil);
         this.currentRecoilRotation = glMatrix.vec3.fromValues(this.specs.recoil.muzzleRiseRotation, this.specs.recoil.recoilSideRotation * (Math.random() - 0.5), 0);
     }
-    canShoot() { // returns true if the player can shoot right now and then shoots
+    canShoot(pos) { // returns true if the player can shoot right now and then shoots
+        // since it shoots if you can shoot, it needs the position of the gun to make the sound the approprate volume
         if (this.firingDelay <= 0 && this.roundsRemaining > 0) {
-            SFXhandler.newSound("./static/zw4/sfx/fire_" + this.name + ".mp3", [0,0,0], 1, "SFX", true);
+            SFXhandler.newSound("./static/zw4/sfx/fire_" + this.name + ".mp3", pos, 1, "SFX", false);
             this.roundsRemaining--;
             if (!this.specs.burstFire) {
                 this.firingDelay = this.specs.delay;
@@ -264,6 +269,10 @@ class Gun {
             glMatrix.mat4.fromTranslation(modelViewMatrix, this.currentRecoilTranslation);
         } else {
             glMatrix.mat4.fromTranslation(modelViewMatrix, [-0.2, -0.05, -0.5]);
+        }
+        // breathing animation
+        if (!sighting) {
+            glMatrix.mat4.translate(modelViewMatrix, modelViewMatrix, [0, 0.01*Math.sin(this.time/500), 0]);
         }
         // rotate the MVM for recoil
         glMatrix.mat4.rotateX(modelViewMatrix, modelViewMatrix, this.currentRecoilRotation[0]);
@@ -358,6 +367,7 @@ class Gun {
         Gun.cartridges.push(toPush);
         glMatrix.vec3.rotateY(toPush.vel, [0, 1 + Math.random() * 0.3, -1 + Math.random() * 0.3], [0,0,0], angleY);
         toPush.ignores = new Set(["Player", "Cartridge"]);
+        return toPush;
     }
 }
 
@@ -375,13 +385,14 @@ class Item extends PhysicsObject {
     static maximumAltitude = 100;
     static minimumAltitude = -10; // this way, they are removed before they are put to sleep
     constructor(x, y, z, thing, type, add = true) {
-        super(x, y, z, 0.2, 0.2, 0.2, false, true, true);
+        super(x, y, z, 0.5, 0.5, 0.5, false, true, true);
         this.type = type;
         this.thing = thing;
         this.t = 0; // used for the rotation effect, in seconds
         if (add) items.push(this);
         // hb2 is used to give it a non-trigger collider, thus, it will not fall through the ground or similar
-        this.hb2 = new PhysicsObject(x, y, z, 0.19, 0.19, 0.19, false, false, true);
+        this.hb2 = new PhysicsObject(x, y, z, 0.49, 0.49, 0.49, false, false, true);
+        this.hb2.ignores = new Set(["Player"]);
     }
     render() {
         if (this.type == "gun") {
@@ -401,25 +412,26 @@ class Item extends PhysicsObject {
         if (this.removed) {return;} // since items may not be removed instantly
         if (this.type == "gun") {
             if (obj.constructor.name == "Player") {
-                oCtx.fillStyle = "black";
-                oCtx.fillRect(oW * 0.4, oH * 0.03, oW * 0.2, oH * 0.07);
-                oCtx.textAlign = "center";
-                oCtx.fillStyle = "white";
-                oCtx.font = (oH * 0.06) + "px Impact";
-                oCtx.fillText("F - " + this.thing, oW * 0.5, oH * 0.08);
+                renderInteractionPrompt("F - " + this.thing);
                 if (divisDownKeys["KeyF"]) {
                     var found = false;
                     for (var i=0; i<4; i++) {
                         if (player.inv[i].constructor.name == "NothingGun") {
                             player.inv[i] = new Gun(this.thing);
                             found = true;
+                            player.invSelect = i;
                             break;
                         }
                     }
                     if (!found) {
+                        var oldGun = player.inv[player.invIndex].name;
                         player.inv[player.invIndex] = new Gun(this.thing);
+                        var itemPos = glMatrix.vec3.create();
+                        glMatrix.vec3.add(itemPos, player.pos, glMatrix.vec3.normalize([0,0,0], [player.cameraFront[0], 0, player.cameraFront[2]]));
+                        new Item(itemPos[0], player.pos[1], itemPos[2], oldGun, "gun", true);
                     }
                     this.removed = true;
+                    SFXhandler.newSound("./static/zw4/sfx/pickup.mp3", player.pos, 1, "SFX", false, false);
                 }
             }
         }
@@ -465,10 +477,7 @@ class Bullet {
             this.hitboxes[i].isBullet = true;
             this.hitboxes[i].ignores.add("Cartridge"); // so they don't dissapear from the cartridges being ejected
             this.hitboxes[i].onCollision = function(o, n) {if (!o.isBullet && !bul.removed) {
-                for (var hb of bul.hitboxes) {
-                    hb.removed = true;
-                }
-                bul.removed = true;
+                bul.destruct();
                 if (o.takeDamage) {
                     o.takeDamage(dmg, bul);
                 }
@@ -479,6 +488,8 @@ class Bullet {
         if (add) {
             bullets.push(this);
         }
+
+        this.whoosingSound = false; // the SFXhandler handle for the bullet's whooshing sound
     }
     static update(dt) {
         bullets = bullets.filter((b)=>!b.removed);
@@ -497,10 +508,19 @@ class Bullet {
             bul.actualLength += bul.speed * dt / 1000;
             bul.actualLength = Math.min(bul.actualLength, bul.maxLength);
             if (glMatrix.vec3.distance(player.cameraPos, bul.pos) > levelSpecs[currentLevel.levelNum].physicsSimulationDistanceG) {
-                bul.removed = true;
-                for (var hb of bul.hitboxes) {hb.removed = true;}
+                bul.destruct();
             }
             bul.concatDataTo(datas);
+
+            // whooshing sound
+            if (!bul.whoosingSound && glMatrix.vec3.dist(bul.pos, player.pos) < 8) {
+                bul.whoosingSound = SFXhandler.newSound("./static/zw4/sfx/bullet.mp3", bul.pos, 1, "SFX", false, false, function(dist) {
+                    // returns [0, 1] depending on distance
+                    return Math.max(0, 1 - dist/6);
+                });
+            } else if (bul.whoosingSound) {
+                bul.whoosingSound.pos = bul.pos;
+            }
         }
         flushRB(Bullet.address, "transformShader");
     }
@@ -525,6 +545,14 @@ class Bullet {
 
             obj.aYRot.push(glMatrix.glMatrix.toRadian(-this.yaw + 90)); obj.aXRot.push(glMatrix.glMatrix.toRadian(-this.pitch));
             obj.aTranslation.push(this.pos[0]); obj.aTranslation.push(this.pos[1]); obj.aTranslation.push(this.pos[2]);
+        }
+    }
+    destruct() {
+        // we need to clean up the hitboxes, as well as stop the whooshing sound
+        this.removed = true;
+        for (var hb of this.hitboxes) {hb.removed = true;}
+        if (this.whoosingSound) {
+            SFXhandler.cancelPlayback(this.whoosingSound);
         }
     }
     static fireBullet(pos, yaw, pitch, spread, color, width, length, speed, damage, numBoxes, velOffset = [0,0,0]) {
@@ -637,7 +665,7 @@ class Zombie extends PhysicsObject {
                 var sp = zomb.gun.specs;
 
                 // burst fire
-                if (zomb.burstRoundsRemaining > 0 && zomb.gun.canShoot()) {
+                if (zomb.burstRoundsRemaining > 0 && zomb.gun.canShoot(zomb.pos)) {
                     zomb.burstRoundsRemaining--;
                     // now we rotate bulletPos around the zombie's feet
                     // basically, since the zombie's model was rotated around its feet, we need to rotate bulletPos around the feet too
@@ -665,6 +693,7 @@ class Zombie extends PhysicsObject {
     takeDamage(amt) {
         this.health -= amt;
         if (this.health <= 0) {
+            SFXhandler.newSound("./static/zw4/sfx/death_" + this.type + ".mp3", this.pos, 1, "SFX", true, false);
             this.removed = true;
             player.health += 25;
             player.health = Math.min(player.health, 100);
@@ -675,6 +704,9 @@ class Zombie extends PhysicsObject {
             clearInterval(this.aggroSoundsInterval);
             player.zombiesKilled++;
         }
+        // damage sound effect
+        SFXhandler.newSound("./static/zw4/sfx/hurt_" + this.type + ".mp3", this.pos, 1, "SFX", true, false);
+
         // hit marker
         GUIeffects.newImageEffect(oTex.hitMarker, oW * 0.1, 1, [oW * 0.5, oH * 0.5], [0, 0], [0, 0]);
 
@@ -715,11 +747,15 @@ class Player extends PhysicsObject {
         this.cameraFront = glMatrix.vec3.fromValues(0, 4, 0);
         this.cameraUp = glMatrix.vec3.fromValues(0, 1, 0);
         this.cameraPos = glMatrix.vec3.fromValues(0, 4, 1);
+        this.userInputVelocity = glMatrix.vec3.create(); // velocity from user input, which is reset to 0 each frame and used to add velocity to things like ejected cartridges
         this.yaw = 0; this.pitch = 0;
         this.speed = 3.61;
         this.sprintSpeed = 6; // used to be 6
+        this.actualSpeed = this.speed; // speed the player is currently at
         this.jumpPower = 4; // 4 m s^-1 when they leave the ground
-        this.inv = [new Gun("MP40"), new NothingGun(""), new NothingGun(""), new NothingGun("")];
+        this.materialStandingOn = false;
+        this.lastMaterialStandingOn = false;
+        this.inv = [new Gun("MP40"), new NothingGun(), new NothingGun(), new NothingGun()];
         this.invIndex = 0;
         this.selected = this.inv[0];
         this.health = 100;
@@ -730,7 +766,13 @@ class Player extends PhysicsObject {
         PathfinderInterface.sendPhysicsObjects();
         PathfinderInterface.genGrid(0.5, 0.7, 3, 4, [this.pos[0], this.pos[1], this.pos[2]]);
 
+        this.footstepsDelay = 500; // ms between each step when walking
+        this.currentFootstepsTimer = 0; // timer for footsteps
+        this.lastWalking = false;
+
         this.zombiesKilled = 0;
+
+        this.reachDistance = 6; // distance you can reach to interact with objects
     }
     genPathfindingMesh() {
         PathfinderInterface.sendPhysicsObjects();
@@ -766,12 +808,47 @@ class Player extends PhysicsObject {
             this.genPathfindingMesh();
             this.lastCenter = [this.pos[0], this.pos[1], this.pos[2]];
         }
+
+        // footsteps
+        this.currentFootstepsTimer -= dt;
+        if ((this.userInputVelocity[0] || this.userInputVelocity[1] || this.userInputVelocity[2]) && this.materialStandingOn) {
+            if (!this.lastWalking || this.currentFootstepsTimer <= 0) {
+                SFXhandler.newSound("./static/zw4/sfx/footstep_" + this.materialStandingOn + "_" + Math.floor(Math.random() * 3 + 1) + ".mp3", [0,0,0], 1, "SFX", true, false);
+                this.currentFootstepsTimer = this.footstepsDelay * this.speed / this.actualSpeed;
+            }
+            this.lastWalking = true;
+        } else {
+            this.lastWalking = false;
+        }
+
+        // jumping
+        if (this.materialStandingOn && !this.lastMaterialStandingOn) {
+            SFXhandler.newSound("./static/zw4/sfx/jump_landing.mp3", [0,0,0], 1, "SFX", true, false);
+        }
+        this.lastMaterialStandingOn = this.materialStandingOn;
+
+        // raycast to see what we hit
+        var colliding = PhysicsObject.raycast(this.cameraPos, this.cameraFront, false, new Set(["Player"]));
+        if (colliding && glMatrix.vec3.dist(colliding.pos, this.cameraPos) < this.reachDistance) {
+            // in range
+            if (!colliding.used && colliding.material && colliding.material.startsWith("recorder_")) {
+                renderInteractionPrompt("F - Use Recorder");
+                if (divisDownKeys["KeyF"]) {
+                    colliding.used = true;
+                    SFXhandler.newSound("./static/zw4/sfx/" + colliding.material + ".mp3", colliding.pos, 1, "SFX");
+                }
+            }
+        }
     }
     jump() {
+        SFXhandler.newSound("./static/zw4/sfx/jump_launch.mp3", [0,0,0], 1, "SFX", true, false);
         this.vel[1] += this.jumpPower;
     }
     takeDamage(dmg, source = null) {
         this.health -= dmg;
+
+        // SFXhandler.newSound("./static/zw4/sfx/player_hurt_" + Math.floor(Math.random() * 3 + 1) + ".mp3", [0,0,0], 1, "SFX", true, false);
+        SFXhandler.newSound("./static/zw4/sfx/hurt_player.mp3", [0,0,0], 1, "SFX", true, false);
         if (source?.constructor?.name == "Bullet") {
             GUIeffects.newImageEffect(oTex.damageMarker, oW * 0.3, 1, [oW * 0.5, oH * 0.5], [0,0], [0,0], Math.PI+angleBetweenVectors(
                 [source.front[0], source.front[2]],
@@ -783,8 +860,15 @@ class Player extends PhysicsObject {
         }
     }
     onCollision(obj, normal) {
-        if (!obj.trigger && normal == "y" && obj.pos[1] < this.pos[1] && divisDownKeys["Space"]) {
-            this.jump();
+        if (!obj.trigger && normal == "y" && obj.pos[1] < this.pos[1]) {
+            if (divisDownKeys["Space"]) {
+                this.jump();
+            }
+            if (obj.material) {
+                this.materialStandingOn = obj.material;
+            } else {
+                this.materialStandingOn = "concrete";
+            }
         }
     }
 }
@@ -845,7 +929,7 @@ class Level {
     }
     load() {
         // adds all the data to the physicsObjects array, the shader buffers, etc
-        bindTexture(loadTexture("./static/zw4/gltf/"+levelSpecs[this.levelNum].texAtlas + "?rand_num="+Math.random()), 0);
+        bindTexture(this.data.tex, 0);
         shaderAddData({
             aVertexPosition: this.data.position,
             aVertexNormal: this.data.normal,
@@ -854,7 +938,8 @@ class Level {
         flush("shaderProgram");
     
         for (var hb of this.data.hitboxes) {
-            new PhysicsObject(hb[0][0], hb[0][1], hb[0][2], hb[1][0], hb[1][1], hb[1][2], true, false, true);
+            var po = new PhysicsObject(hb[0][0], hb[0][1], hb[0][2], hb[1][0], hb[1][1], hb[1][2], true, false, true);
+            po.material = hb.material;
         }
 
         for (var tp of this.data.tps) {
@@ -915,6 +1000,11 @@ class Level {
 
         for (var item of this.data.items) {
             new Item(...item);
+        }
+
+        for (var recorder of this.data.recorders) {
+            var po = new PhysicsObject(recorder[0][0][0], recorder[0][0][1], recorder[0][0][2], recorder[0][1][0], recorder[0][1][1], recorder[0][1][2], true, false, true);
+            po.material = recorder[1];
         }
     
         player.genPathfindingMesh();
