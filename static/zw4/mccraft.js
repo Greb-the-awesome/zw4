@@ -120,8 +120,7 @@ function startGame() {
 
 	menuSongAudioObject.pause();
 }
-var deadSong = new Audio("/static/worldgentest/songs/pressure.mp3");
-deadSong.currentTime = 40.37;
+var deadSong = new Audio("/static/zw4/songs/calm song.mp3");
 function ded(reason) {
 	document.getElementById("deadDiv").style.display = "block";
 	document.getElementById("deadReason").innerHTML = reason;
