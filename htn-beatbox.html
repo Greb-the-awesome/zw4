@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="refresh" content="5;url=https://www.youtube.com/watch?v=BNqGY-piOBQ">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirecting...</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0f0f0f;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    #redirectModal {
+      display: none; 
+      position: fixed; 
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%; 
+      height: 100%; 
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #redirectModalContent {
+      background-color: #1f1f1f;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+    }
+
+    #redirectModalContent a {
+      color: #00b7ff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    #redirectModalContent a:hover {
+      text-decoration: underline;
+    }
+
+    #redirectModalContent p {
+      margin: 15px 0;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <noscript>
+    <p>This page requires JavaScript to function properly.</p>
+  </noscript>
+
+  <div id="redirectModal">
+    <div id="redirectModalContent">
+      <p>You were supposed to be redirected to:</p>
+      <p><a href="https://www.youtube.com/watch?v=BNqGY-piOBQ" target="_blank">https://www.youtube.com/watch?v=BNqGY-piOBQ</a></p>
+      <p>If you are not redirected automatically, click the link above.</p>
+    </div>
+  </div>
+
+  <script>
+    // Attempt JavaScript redirect after a short delay
+    setTimeout(() => {
+      try {
+        window.location.href = "https://www.youtube.com/watch?v=BNqGY-piOBQ";
+      } catch (e) {
+        document.getElementById('redirectModal').style.display = 'flex';
+      }
+    }, 100);
+
+    // Fallback if redirect doesn't happen after a few seconds
+    setTimeout(() => {
+      if (window.location.href.indexOf("youtube.com/watch?v=BNqGY-piOBQ") === -1) {
+        document.getElementById('redirectModal').style.display = 'flex';
+      }
+    }, 3000);
+  </script>
+</body>
+</html>
