@@ -6,7 +6,7 @@ var debugDispNow = {}; var showDebug = false, showGUI = true;
 var firstTime = 0;
 var oW, oH;
 var globalSkybox, currentLevel;
-var creativeMode = true;
+var creativeMode = false;
 var generalWorker;
 var paused = false;
 var firstTimePlaying = true; // whether it's the first time playing or the user died and restarted
