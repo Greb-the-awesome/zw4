@@ -16,6 +16,10 @@ function onKeyDown(event) {
 		if (keyCode == "KeyG") {
 			showGUI = !showGUI;
 		}
+		if (keyCode == "KeyC") {
+			document.getElementById("changelog").classList.toggle("changelog-hidden");
+			document.getElementById("changelog").classList.toggle("changelog-show");
+		}
 	}
 }
 function onKeyUp(event) {

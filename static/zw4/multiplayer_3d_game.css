@@ -13,7 +13,7 @@
 	height: 100%;
 	background-image: url('/static/zw4/gltf/gui/bg.png');
 	background-size: cover;
-	background-position:center;
+	background-position:top center;
 }
 
 .homeDivInner {
@@ -21,6 +21,7 @@
 	top: 0;
 	width: 100%;
 	height: 100%;
+	perspective: 400px;
 }
 
 #pauseDiv {display: none;}
@@ -31,29 +32,25 @@
 	font-size: 2rem;
 }
 #startBtn {
-	font-family: "Teko";
-	font-size: 3rem;
-	font-weight: bold;
-	background-color: #ff6100;
-	color: white;
+	background-color: #00000000;
 	border: none;
 	position: absolute;
-	width: 30%;
-	height: 20%;
-	left: 35%;
-	top: 45%;
+	width: 100%; height: 100%;
+	left: 0; top: 0;
 }
 #helpBtn {
 	position: absolute;
-	top: 65%;
-	left: 35%;
+	top: 60%;
+	left: 25%;
 	width: 30%;
+	transform: translateY(150px) rotateX(60deg)rotateZ(35deg);
 	font-family: "Teko";
 	background-color: grey;
+	border: 3px solid pink;
 	color: white;
 	transition-duration: 0.5s;
 	padding: 0.5% 1%;
-	font-size: 2rem;
+	font-size: 3rem;
 }
 #helpBtn:hover {
 	background-color: skyblue;
@@ -63,7 +60,7 @@
 	position: absolute;
 	left: 0px;
 	bottom: 0px;
-	width: 30%;
+	/* width: 30%; */
 }
 
 #bannerimg {
@@ -77,26 +74,48 @@
 	overflow: scroll;
 	overflow-y: scroll;
 	position: absolute;
-	left: 35%;
-	top: 75%;
-	width: 30%;
-	height: 20%;
+	left: 0%;
+	bottom: 0%;
+	width: 100%;
+	height: 400%;
+}
+
+.helpP {
+	font-size: 2rem;
 }
 
 #changelog {
 	position: absolute;
 	width: 24%;
 	height: 40%;
-	background-color: #00000088;
-	left: 67%;
-	top: 45%;
-	border: 3px solid #ff6100;
+	background-color: #000000A4;
+	border: 3px solid #bb1e1e;
 	overflow: scroll;
+	transform: rotateY(-25deg);
+	transition-duration: 1s;
+}
+
+.changelog-hidden {
+	opacity: 0;
+	pointer-events: none;
+	top: -20%;
+	left: 40%;
+	transition-duration: 1s;
+	scale: 0.1;
+}
+
+.changelog-show {
+	opacity: 1;
+	pointer-events: auto;
+	top: 45%;
+	left: 60%;
+	transition-duration: 1s;
+	scale: 1;
 }
 
 h3 {
 	font-family: "Teko";
-	color: #ff6100;
+	color: #ff2b2b;
 	font-size: 2rem;
 	margin-bottom: 0;
 	padding-bottom: 0; /*idk man things are being wierd in the changelog */

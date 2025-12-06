@@ -1,130 +1,152 @@
 <!DOCTYPE html>
 
 <html>
-	<head>
-		<title>zombie warz</title>
-		<!-- place for attaching preloads -->
-		<audio id="preloadBase" style="display:none;"></audio>
 
-		<!-- js -->
-		<script>var TEXH = 2048, TEXW = 2048;</script>
-		<script type="text/javascript"
-			src="./static/zw4/gl-matrix.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
-		<script src="./static/ihatephysics.js"></script>
-		<script>
-			var menuSongPlayed = false;
-			var menuSongAudioObject = new Audio("./static/zw4/songs/newtheme.mp3");
-			function playMenuSong() {
-				if (menuSongPlayed) {
-					return;
-				} else {
-					menuSongAudioObject.play();
-					menuSongPlayed = true;
-				}
+<head>
+	<title>zombie warz</title>
+	<!-- place for attaching preloads -->
+	<audio id="preloadBase" style="display:none;"></audio>
+
+	<!-- js -->
+	<script>var TEXH = 2048, TEXW = 2048;</script>
+	<script type="text/javascript" src="./static/zw4/gl-matrix.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+	<script src="./static/ihatephysics.js"></script>
+	<script>
+		var menuSongPlayed = false;
+		var menuSongAudioObject = new Audio("./static/zw4/songs/newtheme.mp3");
+		function playMenuSong() {
+			if (menuSongPlayed) {
+				return;
+			} else {
+				menuSongAudioObject.play();
+				menuSongPlayed = true;
 			}
-			addEventListener("mousedown", playMenuSong);
-			addEventListener("touchstart", playMenuSong);
-		</script>
-		<link rel="stylesheet" href="./static/zw4/multiplayer_3d_game.css?ver={{rnd}}">
-		<!-- fonts -->
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet">
-		<link href="https://fonts.googleapis.com/css2?family=Teko:wght@300..700&display=swap" rel="stylesheet">
-	</head>
-	<body>
-		<canvas id="canvas" width="1000" height="1000" style="width: 100%; height:100%;"></canvas>
-		<canvas id="overlay" width="1000" height="1000"
+		}
+		addEventListener("mousedown", playMenuSong);
+		addEventListener("touchstart", playMenuSong);
+	</script>
+	<link rel="stylesheet" href="./static/zw4/multiplayer_3d_game.css?ver={{rnd}}">
+	<!-- fonts -->
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Teko:wght@300..700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+	<canvas id="canvas" width="1000" height="1000" style="width: 100%; height:100%;"></canvas>
+	<canvas id="overlay" width="1000" height="1000"
 		style="width: 100%; height:100%; position:absolute; top:0;left:0;"></canvas>
-		<p id = "debugStuff" style="position: absolute;left:10;top:0;font-weight:bold;background-color:#FFFFFF99;"></p>
-		<!-- ------home screen------- -->
-		<div class="homeDiv" id="homeDiv">
-			<div class="homeDivInner">
-				<center>
-					<img src="./static/zw4/gltf/gui/banner.svg" id="bannerimg">
-					<button id="startBtn" disabled="true" onclick = "startGame();">Loading</button>
-					<button id="helpBtn" onclick="gameHelp();">How to Play</button>
-					<div id="helpDiv" style="display:none;">
-						<strong>Move forward. Conquer. Survive.</strong>
-						<p>Controls: generic FPS controls (WASD to move, cursor to aim, click to shoot)<br>
-						<strong>Shift to sprint, spacebar to jump<br></strong>
-						1 and 2 to switch to another weapon<br>
-						Move forward in the map and get to the end!</p>
-						<p id="betaWarning">Zombiewars 4 is in beta and thus it appears really simplistic
-							(i.e not even a proper item dropping system or ammo count), but I promise there's much more &#60;3</p>
-					</div></center>
-					<div id="changelog">
-						<h3 class="add-margin-left">Changelog</h3>
-						<p class="add-margin-left">
-							<strong>November 20, 2024 - World of Sound</strong><br>
-							The game springs to life with our wonderful new additions of SFX!<br>
-							OK I'm done using figurative language.<br>
-							Basically we added a bunch of SFX for walking, jumping, zombie deaths, player taking damage, zombie taking damage, bullet whooshing, etc
-							Also, we added <strong>lore recordings!</strong> You can find them scattered throughout the first level.<br>
-							A bunch of other little goodies: (tried to) fix audio delayed playing issue, made textures load better so you see the blue
-							"unloaded" texture less, fixed gun muzzle flash not showing, made items not collide with the player, populated the second level with items.
-						</p>
-						<p class="add-margin-left">
-							<strong>Oct 31 2024 - Heavy Fire</strong><br>
-							Tired of the same two guns with the same firing and reloading sounds? Well, you'll love this update!
-							Major League Game Development proudly presents four new guns to satisfy your desire for fire!
-							These guns can be found as loot randomly scattered across the map.<br><br>
-							First up is the humble <strong>AK-47</strong>. A classic, this weapon is balanced in many aspects and offers a nice upgrade to the MP40.<br><br>
-							If you're not satisfied with it's 30 round magazine, fear not as the <strong>PK</strong> boasts an incredible 100-round magazine for a never-ending
-							barrage of bullets. You'll want a secondary though, because of its low accuracy and long reload.<br><br>
-							Not a spray and pray? If you think you're the one with laser aim, maybe the <strong>AN-94</strong>, with its quick two-round hyperburst, will be your friend.<br><br>
-							Or if you want even more damage, try out the <strong>Mosin-Nagant</strong>. Place your shots carefully and you will be unbeatable (hopefully).
-							<br><br>
-							That's not all! We've completely overhauled the weapon firing and reloading sounds. No more MP40s that sound like a cereal box. Experience the sounds
-							for yourself and feel the power!
-							<br><br>
-							Yeah we have even more. Now you can reload your weapon with R instead of having to shoot all of your rounds, you can use your weapon sights with right click, we fixed a bunch of bugs, and made the muzzle flash smaller.
-						</p>
-						<p class="add-margin-left">
-							<strong>September 2024 - A New Look</strong><br>
-							We got a new homepage (finally) that looks better i guess?
-							Also, we fixed the bug where zombies could go outside the walls (finally).
-							Now if you die, you can only blame your skill issue.
-							Lastly, we nerfed the zombies' movement speed from 8m/s to 7m/s.
-						</p>
-					</div>
-			</div>
-			<img src="./static/zw4/gltf/gui/logo.png" id="logoimg">
-		</div>
-		<!-- ------pause------- -->
-		<div id="pauseDiv" class="homeDivInner">
+	<p id="debugStuff" style="position: absolute;left:10;top:0;font-weight:bold;background-color:#FFFFFF99;"></p>
+	<!-- ------home screen------- -->
+	<div class="homeDiv" id="homeDiv">
+		<div class="homeDivInner">
 			<center>
-				<h1>Game Paused</h1>
-				<p>Click outside this box to resume</p>
-				<br><br><br><br><br><br>
-				<button onclick="document.getElementById('pauseDiv').style.display='none';">Hide Banner</button>
+				<button id="startBtn" disabled="true" onclick="startGame();">Loading</button>
+				<button id="helpBtn" onclick="gameHelp();">How to Play<br>
+					<div id="helpDiv" style="display:none;">
+						<strong class="helpP">Move forward. Conquer. Survive.</strong>
+						<p class="helpP">Controls: generic FPS controls (WASD to move, cursor to aim, click to shoot)<br>
+							<strong class="helpP">Shift to sprint, spacebar to jump<br></strong>
+							1 and 2 to switch to another weapon<br>
+							Move forward in the map and get to the end!
+						</p>
+						<p class="helpP" id="betaWarning">Zombiewars 4 is in beta and thus it appears really simplistic, but I promise there's much more
+							&#60;3</p>
+					</div>
+				</button>
+			</center>
+			<div id="changelog" class="changelog-hidden">
+				<h3 class="add-margin-left">Changelog</h3>
+				<p class="add-margin-left">
+					<strong>November 30, 2025 - Public Face</strong><br>
+					We will admit that the old home screen looked quite ugly. So we made a new one!<br>
+					Also, get the Dying Light reference?
+				</p>
+				<p class="add-margin-left">
+					<strong>January 15, 2025 - Small Patches</strong><br>
+					Retroactive update: Many small bug fixes and under the hood improvements. Changes had been in
+					development code for a long time, now finally we pushed them to production.
+				</p>
+				<p class="add-margin-left">
+					<strong>November 20, 2024 - World of Sound</strong><br>
+					The game springs to life with our wonderful new additions of SFX!<br>
+					OK I'm done using figurative language.<br>
+					Basically we added a bunch of SFX for walking, jumping, zombie deaths, player taking damage, zombie
+					taking damage, bullet whooshing, etc
+					Also, we added <strong>lore recordings!</strong> You can find them scattered throughout the first
+					level.<br>
+					A bunch of other little goodies: (tried to) fix audio delayed playing issue, made textures load
+					better so you see the blue
+					"unloaded" texture less, fixed gun muzzle flash not showing, made items not collide with the player,
+					populated the second level with items.
+				</p>
+				<p class="add-margin-left">
+					<strong>Oct 31 2024 - Heavy Fire</strong><br>
+					Tired of the same two guns with the same firing and reloading sounds? Well, you'll love this update!
+					Major League Game Development proudly presents four new guns to satisfy your desire for fire!
+					These guns can be found as loot randomly scattered across the map.<br><br>
+					First up is the humble <strong>AK-47</strong>. A classic, this weapon is balanced in many aspects
+					and offers a nice upgrade to the MP40.<br><br>
+					If you're not satisfied with it's 30 round magazine, fear not as the <strong>PK</strong> boasts an
+					incredible 100-round magazine for a never-ending
+					barrage of bullets. You'll want a secondary though, because of its low accuracy and long
+					reload.<br><br>
+					Not a spray and pray? If you think you're the one with laser aim, maybe the <strong>AN-94</strong>,
+					with its quick two-round hyperburst, will be your friend.<br><br>
+					Or if you want even more damage, try out the <strong>Mosin-Nagant</strong>. Place your shots
+					carefully and you will be unbeatable (hopefully).
+					<br><br>
+					That's not all! We've completely overhauled the weapon firing and reloading sounds. No more MP40s
+					that sound like a cereal box. Experience the sounds
+					for yourself and feel the power!
+					<br><br>
+					Yeah we have even more. Now you can reload your weapon with R instead of having to shoot all of your
+					rounds, you can use your weapon sights with right click, we fixed a bunch of bugs, and made the
+					muzzle flash smaller.
+				</p>
+				<p class="add-margin-left">
+					<strong>September 2024 - A New Look</strong><br>
+					We got a new homepage (finally) that looks better i guess?
+					Also, we fixed the bug where zombies could go outside the walls (finally).
+					Now if you die, you can only blame your skill issue.
+					Lastly, we nerfed the zombies' movement speed from 8m/s to 7m/s.
+				</p>
+			</div>
+		</div>
+	</div>
+	<!-- ------pause------- -->
+	<div id="pauseDiv" class="homeDivInner">
+		<center>
+			<h1>Game Paused</h1>
+			<p>Click outside this box to resume</p>
+			<br><br><br><br><br><br>
+			<button onclick="document.getElementById('pauseDiv').style.display='none';">Hide Banner</button>
+		</center>
+	</div>
+
+	<!-- ------you died!------- -->
+	<div id="deadDiv">
+		<div id="deadMsg">
+			<center>
+				<h1 style="font-size:5rem;">YOU DIED!!!</h1>
+				<strong id="deadReason" style="font-size:2rem;"></strong>
+				<button onclick="restartButton();">RESTART</button>
 			</center>
 		</div>
-
-		<!-- ------you died!------- -->
-		<div id="deadDiv">
-			<div id="deadMsg">
-				<center>
-					<h1 style="font-size:5rem;">YOU DIED!!!</h1>
-					<strong id="deadReason" style="font-size:2rem;"></strong>
-					<button onclick="restartButton();">RESTART</button>
-				</center>
-			</div>
-		</div>
-		<!-- ------------------ -->
-		<script type="text/javascript" src="./static/zw4/keys.js?ver={{rnd}}" defer></script>
-		<script type="text/javascript"
-			src="./static/shaders2.1.js?ver={{rnd}}"></script>
-	<script type="text/javascript"
-			src="./static/division3.1.js?ver={{rnd}}"></script>
-			<script type="text/javascript" src="./static/zw4/specs.js?ver={{rnd}}" defer></script>
-		<script type="text/javascript" src="./static/zw4/loader.js?ver={{rnd}}" defer></script>
-		<script type="text/javascript" src="./static/zw4/pathfinder.js?ver={{rnd}}" defer></script>
-		<script type="text/javascript" src="./static/zw4/terrain.js?ver={{rnd}}" defer></script>
-		<script type="text/javascript" src="./static/zw4/classes.js?ver={{rnd}}" defer></script>
-		<script type="text/javascript" src="./static/zw4/mccraft.js?ver={{rnd}}" defer></script>
-		<script type="text/javascript"
-			src="./static/zw4/perlin.js"></script>
+	</div>
+	<!-- ------------------ -->
+	<script type="text/javascript" src="./static/zw4/keys.js?ver={{rnd}}" defer></script>
+	<script type="text/javascript" src="./static/shaders2.1.js?ver={{rnd}}"></script>
+	<script type="text/javascript" src="./static/division3.1.js?ver={{rnd}}"></script>
+	<script type="text/javascript" src="./static/zw4/specs.js?ver={{rnd}}" defer></script>
+	<script type="text/javascript" src="./static/zw4/loader.js?ver={{rnd}}" defer></script>
+	<script type="text/javascript" src="./static/zw4/pathfinder.js?ver={{rnd}}" defer></script>
+	<script type="text/javascript" src="./static/zw4/terrain.js?ver={{rnd}}" defer></script>
+	<script type="text/javascript" src="./static/zw4/classes.js?ver={{rnd}}" defer></script>
+	<script type="text/javascript" src="./static/zw4/mccraft.js?ver={{rnd}}" defer></script>
+	<script type="text/javascript" src="./static/zw4/perlin.js"></script>
 </body>
+
 </html>

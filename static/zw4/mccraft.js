@@ -6,7 +6,7 @@ var debugDispNow = {}; var showDebug = false, showGUI = true;
 var firstTime = 0;
 var oW, oH;
 var globalSkybox, currentLevel;
-var creativeMode = false;
+var creativeMode = true;
 var generalWorker;
 var paused = false;
 var firstTimePlaying = true; // whether it's the first time playing or the user died and restarted
@@ -106,8 +106,6 @@ function startGame() {
 		PathfinderInterface.init();
 	}
 	oCtx.fillText("Loading...", 100, 100);
-	requestAnimationFrame(function(t) {firstTime = t;});
-    requestAnimationFrame(gameLoop);
     document.getElementById("homeDiv").style.display = "none";
 	canvas.requestPointerLock();
 	IHP.debugLine = debugLine;
@@ -117,8 +115,12 @@ function startGame() {
 
 	currentLevel = new Level(models.level1, 1);
 	currentLevel.load();
+	IHP.regenerateKinematics();
 
 	menuSongAudioObject.pause();
+
+	requestAnimationFrame(function(t) {firstTime = t;});
+    requestAnimationFrame(gameLoop);
 }
 var deadSong = new Audio("/static/zw4/songs/calm song.mp3");
 function ded(reason) {
